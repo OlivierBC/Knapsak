@@ -1,0 +1,95 @@
+﻿@model Knapsak_CFTW.ViewModels.ItemEditViewModel
+
+@{
+    bool isCreateMode = Model.IdItems == 0;
+    string itemTypeSelectStyle = Knapsak_CFTW.Models.Item.GetCssForClass(Model.TypeItem);
+    var inputId = $"lienImageInput_{Model.IdItems}";
+    var imgId = $"imagePreview_{Model.IdItems}";
+}
+
+<form action="/Administration/@(isCreateMode ? "CreateItem" : "EditItem")" method="post" class="card mb-3 p-3">
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(m => m.IdItems)
+
+    <div class="d-flex justify-content-between">
+        <div class="w-100">
+			<div class="row mb-2">
+				<div class="col-auto">
+					<!--couleur de type-arme en default-->
+					<select name="TypeItem" class="form-select admin-itemType-select @itemTypeSelectStyle" id="typeItemSelect" onchange="updateTypeItemClass(this)">
+						@foreach (var itemType in Model.AvailableTypes)
+						{
+							<option value="@itemType.Value" @(itemType.Value == Model.TypeItem ? "selected" : "")>
+								@itemType.Text
+							</option>
+						}
+					</select>
+
+				</div>
+                <div class="col">
+                    @Html.TextBoxFor(m => m.Nom, new { @class = "form-control", placeholder = "Nom de l’objet" })
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col">
+                    @Html.TextBoxFor(m => m.Description, new { @class = "form-control", placeholder = "Description" })
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col">
+                    @Html.TextBoxFor(m => m.PrixUnitaire, new { @class = "form-control", placeholder = "Prix Unitaire" })
+                </div>
+                <div class="col">
+                    @Html.TextBoxFor(m => m.Poids, new { @class = "form-control", placeholder = "Poids" })
+                </div>
+                <div class="col">
+                    @Html.TextBoxFor(m => m.Utilite, new { @class = "form-control", placeholder = "Utilité" })
+                </div>
+                <div class="col">
+                    @Html.TextBoxFor(m => m.QuantiteStock, new { @class = "form-control", placeholder = "Quantité" })
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col">
+                    @Html.TextBoxFor(m => m.LienImage, new { @class = "form-control", placeholder = "URL de l’image", id = inputId })
+                </div>
+                <div class="col-auto d-flex align-items-center">
+                    <button type="button" class="btn btn-outline-secondary" onclick="previewImage(@Model.IdItems)">Prévisualiser</button>
+                </div>
+            </div>
+
+            <div class="row mb-2">
+                <div class="col">
+                    <img id="@imgId"
+                         src="@Model.LienImage"
+                         alt="Aperçu de l’image"
+                         class="img-fluid border @(string.IsNullOrWhiteSpace(Model.LienImage) ? "d-none" : "")"
+                         style="max-height: 200px;" />
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="d-flex flex-column align-items-end ms-2">
+            @if(!isCreateMode){
+                <i class="status-item-@Model.IdItems fs-3 mb-2 bi @(Model.FlagDispo == 1 ? "bi-eye" : "bi-eye-slash") text-black"
+                    style="cursor: pointer;"
+                    onclick="toggleItem(@Model.IdItems)"
+                    title="@(Model.FlagDispo == 1 ? "Désactiver" : "Activer")">
+                </i>
+            }
+
+            <button type="submit" class="btn p-0 mb-2" title="Enregistrer">
+                <i class="bi bi-check-square fs-3 text-black"></i>
+            </button>
+
+            <button type="button" class="btn p-0" title="Annuler" onclick="resetAndCloseItem(this)">
+                <i class="bi bi-x-square fs-3 text-black"></i>
+            </button>
+        </div>
+    </div>
+</form>

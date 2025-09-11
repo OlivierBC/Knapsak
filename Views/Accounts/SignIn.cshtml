@@ -1,0 +1,58 @@
+﻿@model Knapsak_CFTW.ViewModels.ConnexionViewModel
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Connexion";
+}
+
+<div class="d-flex justify-content-center align-items-center">
+    <div class="card shadow-lg p-4" style="width: 400px;">
+        <h2 class="text-center mb-4">Connexion</h2>
+
+        @using (Html.BeginForm("SignIn", "Accounts", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+        {
+            @Html.AntiForgeryToken()
+
+            @if (ViewData.ModelState.ContainsKey("CredentialMismatch"))
+            {
+                <div class="alert alert-danger text-center">
+                    @ViewData.ModelState["CredentialMismatch"].Errors.First().ErrorMessage
+                </div>
+            }
+
+            <div class="form-floating mb-3">
+                @Html.TextBoxFor(model => model.Alias, new { @class = "form-control", placeholder = "Alias" })
+                @Html.LabelFor(model => model.Alias)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.Alias)</div>
+            </div>
+
+            <div class="form-floating mb-3">
+                @Html.PasswordFor(model => model.MPasse, new { @class = "form-control", placeholder = "Mot de passe" })
+                @Html.LabelFor(model => model.MPasse)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.MPasse)</div>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100">
+                <i class="bi bi-box-arrow-in-right"></i> Se connecter
+            </button>
+        }
+
+        <div class="text-center mt-3">
+            @Html.ActionLink("Retour à la liste", "Index", "Items", null, new { @class = "link-noir" })
+        </div>
+
+        <hr>
+
+        <div class="text-center mt-3">
+            <p class="mb-2">Vous n’avez pas encore de compte ?</p>
+            @Html.ActionLink("Inscrivez-vous", "SignUp", "Accounts", null, new { @class = "link-noir" })
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/bundles/jqueryval"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@3.2.12/dist/jquery.validate.unobtrusive.min.js"></script>
+}

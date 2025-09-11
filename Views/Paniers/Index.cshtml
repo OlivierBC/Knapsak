@@ -1,0 +1,139 @@
+﻿@model IEnumerable<Knapsak_CFTW.Models.Panier>
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Mon panier";
+}
+
+<h3 class="text-center">Mon panier</h3>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            @if (!Model.Any()) 
+            {
+                <div class="text-center" style="color: gray; font-size: 20px; padding-top: 100px;">
+                    <h3>Votre panier est vide</h3>
+                </div>
+            }
+            else
+            {
+                <h2>Votre Panier</h2>
+                <div class="list-group">
+                    @foreach (var item in Model)
+                    {
+                        <div class="card mb-3">
+                            <div class="row g-0">
+                                <div class="col-md-4">
+                                    <img src="@item.IdItemNavigation.LienImage" class="card-img-top" alt="@item.ItemNom">
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="info-row">
+                                            <h4>@item.ItemNom</h4>
+                                        </div>
+
+                                        <div class="d-flex gap-4 flex-wrap align-items-center mb-3">
+                                            <div>
+                                                <img src="/images/Bottle_Cap.png" alt="Caps" class="icon"> @item.ItemPrix
+                                            </div>
+                                            <div>
+                                                <span class="item-type @item.IdItemNavigation.GetCssForClass()">
+                                                    @item.IdItemNavigation.TypeItem
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <img src="/images/Poids_Icon.png" alt="Poids" class="icon"> @item.ItemPoids
+                                            </div>
+                                            <div>
+                                                <strong>Stock :</strong> @item.IdItemNavigation.QuantiteStock
+                                            </div>
+                                        </div>
+
+                                        <div class="info-row flex-grow-1">
+                                            <p class="description">@item.IdItemNavigation.Description</p>
+                                        </div>
+
+                                        <div class="d-flex align-items-center justify-content-end mt-auto">
+                                            @using (Html.BeginForm("Modifier", "Paniers", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+
+                                                @Html.Hidden("IdItem", item.IdItem)
+                                                //@Html.Hidden("Modifier", item.IdItem)
+
+                                                <input type="number" id="qty-@item.IdItem" name="quantite" min="1"
+                                                       max="@item.IdItemNavigation.QuantiteStock" value="@item.Quantite" class="qty-input me-2">
+                                                       
+                                            }
+
+                                            @using (Html.BeginForm("Retirer", "Paniers", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                                            {
+                                                @Html.AntiForgeryToken()
+
+                                                @Html.Hidden("IdItem", item.IdItem)
+
+                                                <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i></button>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Total du Panier</h4>
+                    <hr />
+                    <p>
+                        <strong>Total Prix :</strong> 
+                        <img src="/images/Bottle_Cap.png" alt="Caps" class="icon"> @Model.Sum(item => item.ItemPrix * item.Quantite)
+                    </p>
+                    <p>
+                        <strong>Total Poids :</strong> 
+                        <img src="/images/Poids_Icon.png" alt="Poids" class="icon"> @Model.Sum(item => item.ItemPoids * item.Quantite)
+                    </p>
+                    <div class="d-flex flex-column">
+                        @using (Html.BeginForm("Payer", "Paniers", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <button type="submit"  class="btn btn-dark mb-2" id="payerPanier">Payer</button>
+                        }
+                        
+                        @using (Html.BeginForm("Vider", "Paniers", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <button type="submit" class="btn btn-danger" id="viderPanier">Vider le Panier</button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+	<script>
+        document.addEventListener('DOMContentLoaded', function () {
+            document.addEventListener('change', function (event) {
+                if (event.target && event.target.classList.contains('qty-input')) {
+                    const input = event.target;
+                    const form = input.closest('form');
+
+                    let currentValue = parseInt(input.value);
+
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
+        });
+    </script>
+}

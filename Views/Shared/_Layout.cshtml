@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>@ViewData["Title"] - KnapSak-CFTW</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+	<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+	<link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+	<link rel="icon" href="/images/logo.png" type="image/png" />
+
+</head>
+
+<body>
+	@if (TempData["message"] != null)
+	{
+		bool isBad = false;
+		if (TempData["isMessageBad"] != null)
+			isBad = (bool)TempData["isMessageBad"];
+		var icon = isBad ? "bi bi-exclamation-triangle-fill me-2" : "bi bi-check-circle-fill me-2";
+		var color = "alert-" + (isBad ? "danger" : "success");
+		<div id="AlertBox">
+			<div class="alert @color d-flex align-items-center fixed-top top-center-alert" role="alert">
+				<i class="@icon"></i>
+				<span> @TempData["message"]</span>
+			</div>
+		</div>
+	}
+
+	@{
+		Html.RenderPartial("_header");
+	}
+	<div class="container">
+		<main role="main" class="pb-3" style="flex:1;">
+			@RenderBody()
+		</main>
+	</div>
+
+	<footer class="border-top footer text-muted">
+		<div class="container">
+			&copy; 2025 - Knapsak-CFTW - <a asp-area="" asp-page="/Privacy">Privacy</a>
+		</div>
+	</footer>
+
+	<script src="~/lib/jquery/dist/jquery.min.js"></script>
+	<script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="~/js/site.js" asp-append-version="true"></script>
+	<script>
+		const alertBox = document.getElementById('AlertBox');
+			setTimeout(function () {
+				if (alertBox) {
+					alertBox.style.transition = "opacity 0.5s ease-out";
+					alertBox.style.opacity = 0;
+				}
+			}, 2000);
+	</script>
+
+	<!-- jQuery -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+	<!-- Bootstrap (optional, if you're using Bootstrap for modals and other components) -->
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.0/dist/js/bootstrap.bundle.min.js"></script>
+
+	@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

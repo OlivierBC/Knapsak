@@ -1,0 +1,82 @@
+﻿@model Knapsak_CFTW.Models.Enigme
+@{
+	Layout = "_Layout";
+	ViewData["Title"] = "Énigmes";
+	var selected = ViewBag.DifficultesSelectionnees;
+}
+
+<h3 class="text-center">Énigma</h3>
+
+<div class="container">
+	<form method="get" asp-action="Index">
+		<div class="d-flex align-items-center mb-3">
+			<label class="me-2"><strong>Choisir la difficulté :</strong></label>
+			<div class="radio-container diff-selector-container d-flex gap-2 w-100">
+				<button type="button" class="diff-selector diff-unknown @(selected == 0 ? "active" : "")" data-value="0">Aléatoire</button>
+				<button type="button" class="diff-selector diff-facile @(selected == 1 ? "active" : "")" data-value="1">Facile</button>
+				<button type="button" class="diff-selector diff-moyenne @(selected == 2 ? "active" : "")" data-value="2">Moyenne</button>
+				<button type="button" class="diff-selector diff-difficile @(selected == 3 ? "active" : "")" data-value="3">Difficile</button>
+			</div>
+
+			<input type="hidden" name="idDifficulte" value=@ViewBag.DifficultesSelectionnees />
+			<button type="submit" class="btn btn-dark m-3">Piger</button>
+		</div>
+	</form>
+
+	@if (Model != null)
+	{
+		<div class="card shadow-lg p-4 mt-4" style="width: 100%;">
+			<div class="list-group-item border-3">
+				<p><h3 class="text-center fw-bold">@Model.Question</h3></p>
+				<p class="difficulte fw-bold @Model.GetCssForDifficulty()">@Model.DifficulteNavigation.Nom</p>
+			</div>
+
+			<div class="mt-4">
+				<div class="row g-2 d-flex align-items-stretch">
+					@foreach (var rep in Model.Reponses)
+					{
+						<div class="col-md-6">
+							@using (Html.BeginForm("Repondre", "Enigma", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+							{
+								@Html.AntiForgeryToken()
+
+								@Html.Hidden("idReponse", rep.IdReponses)
+								<input type="hidden" name="idDifficulte" value=@ViewBag.DifficultesSelectionnees />
+								//somehow marche pas avec @Html.Hidden
+
+								<button type="submit" class="btn w-100 p-4 fw-bold btn-repondre" @rep.GetAnswerColor(rep.IdReponses % 4) id="reponse-id-@rep.IdReponses">
+									@rep.ReponseText
+								</button>
+							}
+						</div>
+					}
+				</div>
+			</div>
+		</div>
+	}
+</div>
+@section Scripts {
+	<script>
+		document.addEventListener("DOMContentLoaded", () => {
+			const buttons = document.querySelectorAll(".diff-selector");
+			const hiddenDifficulteInputs = document.querySelectorAll("input[name=idDifficulte]");
+
+			function updateDifficulty(value) {
+				hiddenDifficulteInputs.forEach(input => {
+					input.value = value;
+				});
+			}
+
+			buttons.forEach(button => {
+				button.addEventListener("click", function () {
+					buttons.forEach(btn => btn.classList.remove("active"));
+
+					this.classList.add("active");
+
+					const selectedValue = this.getAttribute("data-value");
+					updateDifficulty(selectedValue);
+				});
+			});
+		});
+	</script>
+}

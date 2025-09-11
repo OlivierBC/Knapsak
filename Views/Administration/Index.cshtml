@@ -1,0 +1,332 @@
+﻿@{
+	Layout = "_Layout";
+	ViewData["Title"] = "Panneau d'administration";
+	var sectionToLoad = Context.Request.Query["section"].ToString();
+}
+<form id="antiForgeryForm" style="display:none;">
+	@Html.AntiForgeryToken()
+</form>
+
+<h3 class="text-center mb-4">Panneau d'administration</h3>
+
+<div class="list-group list-group-horizontal text-center justify-content-center mb-3">
+	<a class="list-group-item list-group-item-action" onclick="loadPartial('Requetes')">Requêtes</a>
+	<a class="list-group-item list-group-item-action" onclick="loadPartial('Items')">Items</a>
+	<a class="list-group-item list-group-item-action" onclick="loadPartial('Enigmes')">Énigmes</a>
+</div>
+
+<div id="admin-content">
+	<p class="text-muted text-center">Veuillez sélectionner une section.</p>
+</div>
+
+@section Scripts {
+	<script>
+		function loadPartial(actionName) {
+			const url = `/Administration/${actionName}`;
+			fetch(url)
+				.then(res => {
+					if (!res.ok) throw new Error("Erreur lors du chargement.");
+					return res.text();
+				})
+				.then(html => {
+					document.getElementById("admin-content").innerHTML = html;
+				})
+				.catch(err => {
+					document.getElementById("admin-content").innerHTML =
+						`<div class="alert alert-danger">Erreur : ${err.message}</div>`;
+				});
+		}
+
+		function getAntiForgeryToken() {
+			return document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value;
+		}
+
+		function toggleItem(id) {
+					const token = getAntiForgeryToken();
+					const formData = new URLSearchParams();
+					formData.append("id", id);
+					formData.append("__RequestVerificationToken", token);
+		
+					fetch(`/Administration/ToggleItemDispo`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/x-www-form-urlencoded',
+						},
+						body: formData.toString()
+					})
+					.then(response => {
+						if (!response.ok) throw new Error("HTTP status " + response.status);
+						return response.json();
+					})
+					.then(data => {
+						const iconEls = document.getElementsByClassName(`status-item-${id}`);
+						for (const iconEl of iconEls) {
+							iconEl.classList.remove("bi-eye", "bi-eye-slash");
+							iconEl.classList.add(data.dispo ? "bi-eye" : "bi-eye-slash");
+							iconEl.title = data.dispo ? "Désactiver" : "Activer";
+						}
+					})
+					.catch(err => console.error("toggleItem error:", err));
+				}
+		function toggleItemCreateMode() {
+			const createDiv = document.getElementById("item-create");
+
+			if (createDiv.style.display === "none" || createDiv.innerHTML.trim() === "") {
+				// Show create form
+				if (createDiv.innerHTML.trim() === "") {
+					fetch("/Administration/CreateItemPartial")
+						.then(response => response.text())
+						.then(html => {
+							createDiv.innerHTML = html;
+							createDiv.style.display = "block";
+						});
+				} else {
+					createDiv.style.display = "block";
+				}
+			} else {
+				// Hide create form
+				createDiv.style.display = "none";
+			}
+		}
+		function toggleItemEditMode(itemId) {
+			const displayDiv = document.getElementById(`item-display-${itemId}`);
+			const editDiv = document.getElementById(`item-edit-${itemId}`);
+
+			if (editDiv.style.display === "none" || editDiv.innerHTML.trim() === "") {
+				// Hide display, show edit
+				displayDiv.style.display = "none";
+
+				if (editDiv.innerHTML.trim() === "") {
+					fetch(`/Administration/EditItemPartial/${itemId}`)
+						.then(response => response.text())
+						.then(html => {
+							editDiv.innerHTML = html;
+							editDiv.style.display = "block";
+						});
+				} else {
+					editDiv.style.display = "block";
+				}
+			} else {
+				// Show display, hide edit
+				editDiv.style.display = "none";
+				displayDiv.style.display = "block";
+			}
+		}
+		function previewImage(itemId) {
+			const input = document.getElementById(`lienImageInput_${itemId}`);
+			const preview = document.getElementById(`imagePreview_${itemId}`);
+			const url = input.value;
+
+			const isImage = /\.(jpeg|jpg|png|gif|bmp|webp|svg)$/i.test(url);
+
+			preview.src = isImage ? url : '/images/default.jpg'; // Change if you have a different fallback
+			preview.classList.remove('d-none');
+		}
+
+		function toggleEnigme(id) {
+			const token = getAntiForgeryToken();
+			const formData = new URLSearchParams();
+			formData.append("id", id);
+			formData.append("__RequestVerificationToken", token);
+
+			fetch(`/Administration/ToggleEnigmeActivation`, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: formData.toString()
+			})
+			.then(response => {
+				if (!response.ok) throw new Error("HTTP status " + response.status);
+				return response.json();
+			})
+			.then(data => {
+				const iconEls = document.getElementsByClassName(`status-enigme-${id}`);
+				for (const iconEl of iconEls) {
+					iconEl.classList.remove("bi-eye", "bi-eye-slash");
+					iconEl.classList.add(data.active ? "bi-eye" : "bi-eye-slash");
+					iconEl.title = data.active ? "Désactiver" : "Activer";
+				}
+			})
+			.catch(err => console.error("toggleEnigme error:", err));
+		}
+		function toggleEnigmeCreateMode() {
+			const createDiv = document.getElementById("enigme-create");
+
+			if (createDiv.style.display === "none" || createDiv.innerHTML.trim() === "") {
+				// Show create form
+				if (createDiv.innerHTML.trim() === "") {
+					fetch("/Administration/CreateEnigmePartial")
+						.then(response => response.text())
+						.then(html => {
+							createDiv.innerHTML = html;
+							createDiv.style.display = "block";
+						});
+				} else {
+					createDiv.style.display = "block";
+				}
+			} else {
+				// Hide create form
+				createDiv.style.display = "none";
+			}
+		}
+		function toggleEnigmeEditMode(enigmeId) {
+			const displayDiv = document.getElementById(`enigme-display-${enigmeId}`);
+			const editDiv = document.getElementById(`enigme-edit-${enigmeId}`);
+
+			if (editDiv.style.display === "none" || editDiv.innerHTML.trim() === "") {
+				// Hide display, show edit
+				displayDiv.style.display = "none";
+
+				if (editDiv.innerHTML.trim() === "") {
+					fetch(`/Administration/EditEnigmePartial/${enigmeId}`)
+						.then(response => response.text())
+						.then(html => {
+							editDiv.innerHTML = html;
+							editDiv.style.display = "block";
+						});
+				} else {
+					editDiv.style.display = "block";
+				}
+			} else {
+				// Show display, hide edit
+				editDiv.style.display = "none";
+				displayDiv.style.display = "block";
+			}
+		}
+
+		function resetAndCloseItem(button) {
+			const form = button.closest("form");
+			const parentDiv = form.parentElement;
+
+			// Reset form inputs
+			form.reset();
+
+			// Reset item type select styling
+			const typeSelect = form.querySelector("#typeItemSelect");
+			if (typeSelect) {
+				updateTypeItemClass(typeSelect); // Reapply background & class based on default
+			}
+
+			// Detect if it's the create form
+			if (parentDiv.id === "item-create") {
+				parentDiv.innerHTML = "";
+				parentDiv.style.display = "none";
+				return;
+			}
+
+			// If it's an edit form, get the ID and toggle back to display mode
+			const idInput = form.querySelector("input[name='IdItems']");
+			if (idInput) {
+				toggleItemEditMode(idInput.value); // This should hide the edit form and show the item display
+			}
+		}
+		function resetAndCloseEnigme(button) {
+			const form = button.closest("form");
+			const parentDiv = form.parentElement;
+
+			// Reset form inputs
+			form.reset();
+
+			// Update difficulty class styling after reset
+			const difficultySelect = form.querySelector("#difficulte-select");
+			if (difficultySelect) {
+				updateDifficultyClass(difficultySelect);
+			}
+
+			// Detect if it's the create form
+			if (parentDiv.id === "enigme-create") {
+				parentDiv.innerHTML = "";
+				parentDiv.style.display = "none";
+				return;
+			}
+
+			// If it's an edit form, get the ID and toggle back to display mode
+			const idInput = form.querySelector("input[name='IdEnigmes']");
+			if (idInput) {
+				toggleEnigmeEditMode(idInput.value); // This will hide the edit form and show the display
+			}
+		}
+		function updateDifficultyClass(selectElement) {
+			const select = selectElement;
+			select.classList.remove('diff-facile', 'diff-moyenne', 'diff-difficile', 'diff-unknown');
+
+			switch (parseInt(select.value)) {
+				case 1:
+					select.classList.add('diff-facile');
+					break;
+				case 2:
+					select.classList.add('diff-moyenne');
+					break;
+				case 3:
+					select.classList.add('diff-difficile');
+					break;
+				default:
+					select.classList.add('diff-unknown');
+			}
+		}
+		function updateTypeItemClass(select) {
+			select.classList.remove(
+				'type-arme',
+				'type-medicament',
+				'type-armure',
+				'type-nourriture',
+				'type-munition',
+				'type-unknown'
+			);
+
+			let background = "";
+			switch (select.value) {
+				case "Armes":
+					select.classList.add("type-arme");
+					break;
+				case "Medicaments":
+					select.classList.add("type-medicament");
+					break;
+				case "Armures":
+					select.classList.add("type-armure");
+					break;
+				case "Nourritures":
+					select.classList.add("type-nourriture");
+					break;
+				case "Munitions":
+					select.classList.add("type-munition");
+					break;
+				default:
+					select.classList.add("type-unknown");
+			}
+
+			select.style.backgroundColor = background;
+		}
+		
+		function selectBonneReponse(index, button) {
+			// Set hidden field value
+			document.getElementById('IndexBonneReponse').value = index;
+
+			// Remove 'selected' from all buttons and update icons
+			document.querySelectorAll('.icon-radio').forEach(btn => {
+				btn.classList.remove('selected');
+				btn.querySelector('i').classList.remove('bi-check-lg');
+			});
+
+			// Mark this one as selected
+			button.classList.add('selected');
+			const icon = button.querySelector('i');
+			icon.classList.add('bi-check-lg');
+		}
+
+		// Auto-load une section (requetes,items ou enigmes)
+		const sectionFromQuery = '@sectionToLoad';
+		if (sectionFromQuery) {
+			loadPartial(sectionFromQuery);
+		}
+
+		//set le style des selects de diffculte/type d'item selon la valeur par défaut/prédéfini
+		window.addEventListener("DOMContentLoaded", function () {
+			const select = document.getElementById("typeItemSelect");
+			if (select) updateTypeItemClass(select);
+			select = document.getElementById("difficulte-select");
+			if (select) updateDifficultyClass(select);
+		});
+	</script>
+}

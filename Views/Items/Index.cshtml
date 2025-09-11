@@ -1,0 +1,259 @@
+﻿@model IEnumerable<Knapsak_CFTW.Models.Item>
+
+@{
+	Layout = "_Layout";
+	ViewData["Title"] = "Menu d'achat";
+	List<string> selectedTypes = ViewBag.SelectedTypes as List<string> ?? new List<string>();
+}
+
+<h3 class="text-center">Menu d'achat</h3>
+
+<div class="container">
+	<div class="row">
+		<aside class="col-md-3">
+			<div class="card card-filters p-3">
+				<h5>Filtres</h5>
+				<hr>
+				<form id="filterForm">
+					<div>
+						<label><strong>Type d'items</strong></label>
+						<div>
+							@foreach (var type in new List<string> { "Armes", "Armures", "Medicaments", "Nourritures", "Munitions" })
+							{
+								<input type="checkbox" name="types" value="@type" id="@type" @(selectedTypes.Contains(type) ? "checked=\"checked\"" : "")>
+								<label for="@type">@type</label>
+
+								<br>
+							}
+						</div>
+					</div>
+					<hr>
+					<div>
+						<label><strong>Prix</strong></label>
+						<div class="d-flex align-items-center">
+							<input type="number" name="prices" id="minPrice" class="form-control me-2" placeholder="Min" min="0" value="@ViewBag.MinPrice" onchange="applyFilters()">
+							<span>-</span>
+							<input type="number" name="prices" id="maxPrice" class="form-control ms-2" placeholder="Max" min="0" value="@ViewBag.MaxPrice" onchange="applyFilters()">
+						</div>
+					</div>
+					<hr>
+					<div>
+						<label><strong>Autres</strong></label><br>
+						<input type="checkbox" id="nondisponible">
+						<label for="nondisponible">Items non-disponibles</label>
+					</div>
+					<hr>
+					<button type="button" class="btn btn-outline-secondary w-100 mt-2" id="resetFilters">Réinitialiser</button>
+				</form>
+			</div>
+		</aside>
+
+		<section class="col-md-9">
+			<div class="filters-search-container">
+				<div class="search-container">
+					<input type="text" class="search-input" placeholder="Recherche d'items" oninput="applyFilters()">
+					<i class="bi bi-search search-icon"></i>
+				</div>
+
+				<div class="radio-container">
+					<button class="radio-btn active">Tous</button>
+					<button class="radio-btn">Poids</button>
+					<button class="radio-btn">Prix</button>
+					<!--<button class="filter-btn">Notes</button>-->
+				</div>
+			</div>
+
+			<div id="itemList" class="row">
+				@foreach (var item in Model)
+				{
+					var EvalsInfo = item.GetEvalsInfo();
+					//data-id devrait etre hidden somehow
+					<div class="show-item-modal col-md-4 mb-5 item" data-id="@item.IdItems" data-name="@item.Nom" data-type="@item.TypeItem" data-price="@item.PrixUnitaire" data-weight="@item.Poids" data-available="@(item.FlagDispo == 1 && item.QuantiteStock > 0 ? "1" : "0")">
+						<div class="card card-item">
+							@if (@item.FlagDispo == 0 || item.QuantiteStock <= 0)
+							{
+								<div class="alert-icon" title="L'item n'est plus disponible à l'achat">
+									<i class="bi bi-exclamation-circle-fill"></i>
+								</div>
+							}
+
+							<a href="#" class="text-decoration-none text-dark" data-bs-toggle="modal" data-bs-target="#itemModal-@item.IdItems" data-title="@item.Nom" data-price="@item.PrixUnitaire" data-image="@item.LienImage">
+								<img src="@item.LienImage" class="card-img-top" alt="@item.Nom" style="height: 140px; padding: 10px; object-fit: contain;">
+								<div class="card-body text-start">
+									<h5 class="card-title">@item.Nom</h5>
+									<p class="card-text d-flex justify-content-between align-items-center">
+										<span>
+											<img src="/images/Bottle_Cap.png" alt="Caps" style="width: 25px; height: 25px;"> @item.PrixUnitaire
+										</span>
+										<span>
+											<img src="/images/Poids_Icon.png" alt="Poids" style="width: 25px; height: 25px;"> @item.Poids
+										</span>
+										<span>
+											<img src="/images/Stock_Icon.png" alt="Poids" style="width: 25px; height: 25px;"> @item.QuantiteStock
+										</span>
+										<span>
+											<img src="/images/etoilePleine.png" alt="Poids" style="width: 25px; height: 25px;"> <b>@EvalsInfo.Item2</b> (@EvalsInfo.Item1)
+										</span>
+									</p>
+								</div>
+							</a>
+						</div>
+					</div>
+				}
+			</div>
+		</section>
+	</div>
+</div>
+<div id="itemModalContainer"></div>
+@section Scripts {
+	<script>  
+		$(document).on("click", ".show-item-modal", function () {
+			var id = $(this).data("id");
+
+			$.get("/Items/DetailsPartial/"+id, function (data) {
+				$("#itemModalContainer").html(data);
+				var modalId = "#itemModal-" + id;
+				var modal = new bootstrap.Modal($(modalId)[0]);
+				modal.show();
+			});
+		});
+		function applyFilters() {
+			const query = document.querySelector(".search-input").value.trim().toLowerCase();
+			const selectedTypes = Array.from(document.querySelectorAll('input[name="types"]:checked')).map(input => input.value);
+			const showUnavailable = document.getElementById('nondisponible').checked;
+
+			const minPrice = document.getElementById('minPrice').value;
+			const maxPrice = document.getElementById('maxPrice').value;
+
+			const items = document.querySelectorAll('.item');
+
+			items.forEach(item => {
+				const itemName = item.getAttribute('data-name').toLowerCase();
+				const itemType = item.getAttribute('data-type');
+				const itemAvailable = item.getAttribute('data-available') == 1;
+				const itemPrice = parseFloat(item.getAttribute('data-price')) || 0;
+
+				const matchesSearch = query === '' || itemName.includes(query);
+
+				const matchesType = selectedTypes.length === 0 || selectedTypes.includes(itemType);
+				const matchesAvailability = showUnavailable || itemAvailable;
+
+				const matchesPrice = (minPrice === "" || itemPrice >= minPrice) && (maxPrice === "" || itemPrice <= maxPrice);
+
+				if (matchesSearch && matchesType && matchesAvailability && matchesPrice) {
+					item.style.display = 'block';
+				} else {
+					item.style.display = 'none';
+				}
+			});
+		}
+
+		document.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('input[name="types"], #nondisponible').forEach(input => {
+				input.addEventListener('change', applyFilters);
+			});
+
+			const minPriceInput = document.getElementById('minPrice');
+			const maxPriceInput = document.getElementById('maxPrice');
+			minPriceInput.addEventListener('input', function () {
+				let minValue = parseFloat(minPriceInput.value) || 0; 
+				let maxValue = parseFloat(maxPriceInput.value) || 0; 
+
+				if (minValue > maxValue) {
+					maxPriceInput.value = minValue;
+				}
+			});
+			maxPriceInput.addEventListener('input', function () {
+				let minValue = parseFloat(minPriceInput.value) || 0;
+				let maxValue = parseFloat(maxPriceInput.value) || 0;
+
+				if (maxValue < minValue) {
+					minPriceInput.value = maxValue;
+				}
+			});
+
+
+			const filterButtons = document.querySelectorAll('.radio-btn');
+			const itemsContainer = document.getElementById('itemList');
+			const originalOrder = Array.from(itemsContainer.querySelectorAll('.item'));
+
+			filterButtons.forEach(button => {
+				button.addEventListener('click', function () {
+					
+					filterButtons.forEach(btn => {
+						if (btn !== this) {
+							btn.classList.remove('sort-down', 'sort-up', 'active');
+							btn.textContent = btn.textContent.replace(/[↓↑]/g, '');
+						}
+					});
+
+					if (this.textContent.trim() === 'Tous') {
+						this.classList.remove('sort-down', 'sort-up');
+						this.textContent = 'Tous';
+
+						this.classList.add('active');
+						originalOrder.forEach(item => itemsContainer.appendChild(item));
+					} else {
+						let sortOrder;
+						if (this.classList.contains('sort-down')) {
+							this.classList.remove('sort-down');
+							this.classList.add('sort-up');
+							this.textContent = this.textContent.replace(/[↓↑]/g, '') + ' ↑';
+							sortOrder = 'asc';
+						} else if (this.classList.contains('sort-up')) {
+							this.classList.remove('sort-up');
+							this.classList.add('sort-down');
+							this.textContent = this.textContent.replace(/[↓↑]/g, '') + ' ↓';
+							sortOrder = 'desc';
+						} else {
+							this.classList.add('sort-down');
+							this.textContent += ' ↓';
+							sortOrder = 'desc';
+						}
+
+						this.classList.add('active');
+
+						const criteria = this.textContent.trim().toLowerCase().includes('prix') ? 'price' :
+							this.textContent.trim().toLowerCase().includes('poids') ? 'weight' : null;
+
+						if (criteria) {
+							sortItems(criteria, sortOrder);
+						}
+					}
+					applyFilters();
+				});
+			});
+
+			function sortItems(criteria, order) {
+				const items = Array.from(itemsContainer.querySelectorAll('.item'));
+
+				items.sort((a, b) => {
+					const valueA = parseFloat(a.getAttribute(`data-${criteria}`)) || 0;
+					const valueB = parseFloat(b.getAttribute(`data-${criteria}`)) || 0;
+
+					return order === 'asc' ? valueA - valueB : valueB - valueA;
+				});
+
+				items.forEach(item => itemsContainer.appendChild(item));
+			}
+
+			applyFilters();
+
+			document.getElementById('resetFilters').addEventListener('click', function () {
+				document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+				document.getElementById('minPrice').value = "";
+				document.getElementById('maxPrice').value = "";
+
+				filterButtons.forEach(btn => {
+					btn.classList.remove('sort-down', 'sort-up', 'active');
+					btn.textContent = btn.textContent.replace(/[↓↑]/g, '');
+					if (btn.textContent.trim() === 'Tous') {
+						btn.classList.add('active');
+					}
+				});
+
+				applyFilters();
+			});
+		});
+	</script>
+}

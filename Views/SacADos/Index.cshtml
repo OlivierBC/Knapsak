@@ -1,0 +1,143 @@
+﻿@model IEnumerable<Knapsak_CFTW.Models.SacADos>
+
+@{
+	Layout = "_Layout";
+	ViewData["Title"] = "Mon sac";
+}
+
+<h3 class="text-center">Mon sac</h3>
+
+<div class="container">
+	@*<div class="col-md-9">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2>Mon Sac à Dos</h2>
+
+            <div class="d-flex align-items-center">
+                <div class="filters-container">
+                    <button class="filter-btn active" onclick="filterItems('all')">Tous</button>
+                    <button class="filter-btn" onclick="filterItems('poids')">Poids</button>
+                    <button class="filter-btn" onclick="filterItems('prix')">Prix</button>
+                </div>
+            </div>
+        </div>
+    </div>*@
+
+	@if (!Model.Any())
+	{
+		<div class="text-center" style="color: gray; font-size: 20px; padding-top: 100px;">
+			<h3>Votre sac à dos est vide</h3>
+		</div>
+	}
+	else
+	{
+		<div class="list-group">
+			@foreach (var sac in Model)
+			{
+				<div class="card mb-3 item" data-name="@sac.IdItemNavigation.Nom" data-type="@sac.IdItemNavigation.TypeItem" data-available="@sac.IdItemNavigation.FlagDispo" data-price="@sac.IdItemNavigation.PrixUnitaire" data-weight="@sac.IdItemNavigation.Poids">
+					<div class="row g-0">
+						<div class="col-md-2">
+							<img src="@sac.IdItemNavigation.LienImage" class="card-img-top img-fluid" alt="@sac.IdItemNavigation.Nom" style="max-width: 150px; height: auto;">
+						</div>
+						<div class="col-md-10">
+							<div class="card-body">
+								<div class="d-flex justify-content-start align-items-center">
+									<div class="me-3">
+										<strong>@sac.IdItemNavigation.Nom</strong>
+									</div>
+									<div class="me-3">
+										<p class="mb-0">
+											<img src="/images/Bottle_Cap.png" alt="Caps" class="icon"> @sac.IdItemNavigation.PrixUnitaire
+										</p>
+									</div>
+									<div class="me-3">
+										<p class="mb-0">
+											<span class="item-type @sac.IdItemNavigation.GetCssForClass()">
+												@sac.IdItemNavigation.TypeItem
+											</span>
+										</p>
+									</div>
+									<div class="me-3">
+										<p class="mb-0">
+											<img src="/images/Poids_Icon.png" alt="Poids" class="icon"> @sac.IdItemNavigation.Poids
+										</p>
+									</div>
+									@if(sac.IdItemNavigation.IsMedicament){
+										<div class="me-3">
+											<p class="mb-0">
+												<img src="/images/gainVie.png" alt="Vie" class="icon"> @sac.gainVie
+											</p>
+										</div>
+									}
+									@if (sac.IdItemNavigation.IsNourriture)
+									{
+										<div class="me-3">
+											<p class="mb-0">
+												<img src="/images/gainVie.png" alt="Vie" class="icon"> @sac.gainVie
+											</p>
+										</div>
+									}
+									<div>
+										<p class="mb-0"><strong>Quantité :</strong> @sac.Quantite</p>
+									</div>
+								</div>
+								<div class="mt-3">
+									<p> @sac.IdItemNavigation.Description</p>
+								</div>
+								<div class="mt-3">
+
+									@if (@sac.IdItemNavigation.TypeItem == "Medicaments" || @sac.IdItemNavigation.TypeItem == "Nourritures")
+									{
+										@using (Html.BeginForm("Consommer", "SacADos", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+										{
+											@Html.AntiForgeryToken()
+
+											@Html.Hidden("IdItem", sac.IdItem)
+
+											<button type="submit" class="btn btn-dark me-2">Consommer</button>
+										}
+									}
+									<div class="d-flex justify-content-end align-items-center mt-3">
+										<input type="number" id="qty-@sac.IdItem" name="quantiteInput" min="1"
+											   max="@sac.Quantite" value="1" class="qty-input me-2">
+										@using (Html.BeginForm("Vendre", "SacADos", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+										{
+											@Html.AntiForgeryToken()
+
+											@Html.Hidden("IdItem", sac.IdItem)
+											@Html.Hidden("quantite", 1)
+											
+											<button type="submit" class="btn btn-light border-dark me-2">Vendre</button>
+										}
+										@using (Html.BeginForm("Retirer", "SacADos", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+										{
+											@Html.AntiForgeryToken()
+
+											@Html.Hidden("IdItem", sac.IdItem)
+											@Html.Hidden("quantite", 1)
+
+											<button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i></button>
+										}
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			}
+		</div>
+	}
+</div>
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function() {
+			document.querySelectorAll('input[name="quantiteInput"]').forEach(function(qtyInput) {
+				console.log(qtyInput);
+				var parentDiv = qtyInput.parentElement;
+				var forms = parentDiv.querySelectorAll('form');
+
+				qtyInput.addEventListener('change', () => {
+		forms.forEach(function(form) {form.querySelectorAll('input[name=quantite]').forEach(function(hidQtyInput) {hidQtyInput.value = qtyInput.value;})});
+				});
+			});
+		});
+	</script>

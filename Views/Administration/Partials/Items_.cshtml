@@ -1,0 +1,54 @@
+﻿@model List<Knapsak_CFTW.Models.Item>
+
+<div class="d-flex justify-content-between align-items-center mb-3 header-toolbar">
+    <h4 class="mb-0">Gestion des Items</h4>
+    <i class="bi bi-plus-square fs-3 text-black"
+       title="Créer un nouvel item"
+       style="cursor: pointer;"
+       onclick="toggleItemCreateMode()">
+    </i>
+</div>
+
+<!-- Create form (hidden initially) -->
+<div id="item-create" style="display: none;"></div>
+
+<div>
+	@if (!Model.Any())
+	{
+		<span>Aucun item n'a été créé</span>
+	}
+	else
+	{
+		foreach (var item in Model)
+		{
+            <div id="item-wrapper-@item.IdItems" class="mb-3">
+                <!-- Display card -->
+                <div id="item-display-@item.IdItems" class="card p-3">
+                    <div class="d-flex justify-content-between">
+                        <div class="justify-content-start d-flex align-items-center">
+                            <span class="item-type @item.GetCssForClass() fw-bold m-1">
+                                @item.TypeItem
+                            </span>
+                            <h5 class="m-1">@item.Nom</h5>
+                        </div>
+                        <div class="justify-content-end">
+                            <i class="status-item-@item.IdItems text-black bi @(item.FlagDispo == 1 ? "bi-eye" : "bi-eye-slash") fs-3 m-1"
+                               style="cursor: pointer;"
+                               onclick="toggleItem(@item.IdItems)"
+                               title="@(item.FlagDispo == 1 ? "Désactiver" : "Activer")">
+                            </i>
+                            <i class="bi bi-pencil text-black fs-3 m-1"
+                               title="Modifier l’item"
+                               style="cursor: pointer;"
+                               onclick="toggleItemEditMode(@item.IdItems)">
+                            </i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit form (hidden initially) -->
+                <div id="item-edit-@item.IdItems" style="display: none;"></div>
+            </div>
+		}
+	}
+</div>

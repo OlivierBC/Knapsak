@@ -1,0 +1,354 @@
+﻿@inject Knapsak_CFTW.Models.SessionService SessionService
+@using Microsoft.EntityFrameworkCore;
+@model Knapsak_CFTW.Models.Item
+
+@{
+	Layout = "_Layout";
+	ViewData["Title"] = "Évaluations";
+	var EvalsInfo = Model.GetEvalsInfo();
+	int MaxEtoiles = Knapsak_CFTW.Models.Evaluation.MaxEtoiles;
+
+	var joueurConnecte = SessionService.GetConnected(false);
+	var userEval = joueurConnecte != null 
+		? Model.Evaluations.FirstOrDefault(e => e.IdJoueur == joueurConnecte.IdJoueurs) 
+		: null;
+
+	var evalsWithComments = SessionService.GetEvalsWithComments(Model.IdItems);
+	if (userEval != null && !string.IsNullOrEmpty(userEval.Commentaire))
+	{
+		evalsWithComments = new[] { userEval }
+			.Concat(evalsWithComments.Where(e => e.IdJoueur != userEval.IdJoueur))
+			.ToList();
+	}
+
+	bool isInInventory = SessionService.ConnectedPlayerHasItem(Model.IdItems);
+
+	var evaluationsPerStar = new int[MaxEtoiles];
+	foreach (var eval in Model.Evaluations)
+	{
+		if (eval.NbEtoiles > 0 && eval.NbEtoiles <= MaxEtoiles)
+		{
+			evaluationsPerStar[eval.NbEtoiles - 1]++;
+		}
+	}
+
+	var totalEvaluations = Model.Evaluations.Count();
+	var percentagePerStar = new double[MaxEtoiles];
+	if (totalEvaluations > 0)
+	{
+		for (int i = 0; i < MaxEtoiles; i++)
+		{
+			percentagePerStar[i] = (evaluationsPerStar[i] / (double)totalEvaluations) * 100;
+		}
+	}
+}
+
+
+<div class="container mt-4">
+	<div class="row">
+		<div class="col-md-8">
+			<div class="item-details">
+				<div class="d-flex flex-wrap mb-3">
+					<div class="w-50 pe-3">
+						<img src="@Model.LienImage" class="img-fluid rounded" alt="@Model.Nom">
+					</div>
+
+					<div class="w-50">
+						<div class="mb-3">
+							<h4>@Model.Nom</h4>
+						</div>
+
+						<div class="d-flex flex-wrap gap-3 align-items-center">
+							<p class="mb-0"><img src="/images/Bottle_Cap.png" alt="Caps" class="icon"> @Model.PrixUnitaire</p>
+							<p class="mb-0 item-type @Model.GetCssForClass()"> @Model.TypeItem</p>
+							<p class="mb-0"><img src="/images/Poids_Icon.png" alt="Poids" class="icon">  @Model.Poids</p>
+							<p class="mb-0"><strong>Stock :</strong> @Model.QuantiteStock</p>
+							@* <p class="mb-0"><img src="/images/etoilePleine.png" alt="Étoile" style="width: 25px; height: 25px;"><b>@EvalsInfo.Item2</b> (@EvalsInfo.Item1)</p> *@
+						</div>
+					</div>
+				</div>
+
+				<div class="d-flex flex-wrap gap-3 align-items-center mb-3 px-3 py-2 rounded" style="background-color:@Model.GetCssForClassBackground();">
+					@switch (Model.TypeItem)
+					{
+						case "Nourritures":
+							<p class="mb-0 pdetail"><img src="/images/gainVie.png" alt="Vie" class="icon"> @Model.Nourriture.GainDeVie</p>
+							<p class="mb-0 pdetail">Composant Nutritif: @Model.Nourriture.ComposantNutritif</p>
+							<p class="mb-0 pdetail">Mineral: @Model.Nourriture.Mineral</p>
+							<p class="mb-0 pdetail">Calories: @Model.Nourriture.Calories</p>
+							break;
+						case "Medicaments":
+							<p class="mb-0 pdetail"><img src="/images/gainVie.png" alt="Vie" class="icon"> @Model.Medicament.GainDeVie</p>
+							<p class="mb-0 pdetail">Effet: @Model.Medicament.Effet</p>
+							<p class="mb-0 pdetail">Effet indesirable:@Model.Medicament.EffetIndesirable</p>
+							<p class="mb-0 pdetail">Durée:@Model.Medicament.Duree</p>
+							break;
+						case "Armes":
+							@foreach (var arme in Model.Armes)
+							{
+								<p class="mb-0 pdetail">Efficacité : @arme.Efficacite</p>
+								<p class="mb-0 pdetail">Genre :  @arme.Genre</p>
+							}
+							break;
+						case "Armures":
+							<p class="mb-0 pdetail">Taille: @Model.Armure.Taille</p>
+							<p class="mb-0 pdetail">Matière: @Model.Armure.Matiere</p>
+							break;
+						case "Munitions":
+							<p class="mb-0 pdetail">Calibre: @Model.Munition.Calibre</p>
+							break;
+					}
+				</div>
+				<div>@Model.Description</div>
+			</div>
+		</div>
+
+		<!-- Statistiques Graph -->
+		<div class="col-md-4">
+			<div class="stat-panel" style="overflow: hidden;">
+				<h5>Évaluations</h5>
+				<div class="evaluation-stat">
+					<p>Moyenne des Notes : <strong>@EvalsInfo.Item2</strong></p>
+					<p>Nombre d'Évaluations : <strong>@EvalsInfo.Item1</strong></p>
+					<hr />
+					@if (Model.Evaluations.Any())
+					{
+						<div>
+							<canvas id="evaluation-graph"></canvas>
+						</div>
+					}
+					else
+					{
+						<p>Aucune évaluation n’a encore été soumise pour cet item.</p>
+					}
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<!-- Commentaires -->
+	<div class="row mt-4">
+		<div class="col-12">
+			<div class="comments-panel">
+				<h5>Commentaires</h5>
+
+				@if (joueurConnecte != null)
+				{
+					if (userEval == null)
+					{
+						<details class="add-evaluation m-4">
+							<summary class="summary-button">
+								Ajouter une Évaluation
+							</summary>
+							@if(isInInventory){
+								<form class="details-body" method="post" action="/Items/AddEvaluation">
+									@Html.AntiForgeryToken()
+									<div class="form-group">
+										<label for="rating">Note:</label>
+										<div id="star-rating" class="d-flex align-items-center">
+											@for (int i = 1; i <= MaxEtoiles; i++)
+											{
+												<input type="radio" name="NbEtoiles" value="@i" id="star-star-@i" class="d-none" required />
+												<label for="star-star-@i" class="star-label star-star-label" data-star="@i" style="cursor:pointer;">
+													<img src="~/images/etoileVide.png" alt="@i étoiles" class="star-img star-star-img" style="width:25px; height:25px;" />
+												</label>
+											}
+										</div>
+									</div>
+
+									<div class="form-group mt-3">
+										<label for="comment">Commentaire:</label>
+										<textarea id="comment" name="Commentaire" class="form-control" rows="4" maxlength="@Knapsak_CFTW.Models.Evaluation.MaxCommLength"></textarea>
+									</div>
+
+									<input type="hidden" name="IdItem" value="@Model.IdItems" />
+									<button type="submit" class="btn btn-dark mt-3">Soumettre</button>
+								</form>
+							}
+							else{
+								<p class="details-body">Vous ne pouvez pas évalué cet item, car vous ne le possédez pas!</p>
+							}
+						</details>
+					}
+					else
+					{
+						<details class="add-evaluation m-4">
+							<summary class="summary-button">Modifier votre Évaluation</summary>
+							<div class="details-body">
+								<form method="post" action="/Items/UpdateEvaluation">
+									@Html.AntiForgeryToken()
+									<div class="form-group">
+										<label for="rating">Note:</label>
+										<div id="star-edit-star-rating" class="d-flex align-items-center">
+											@for (int i = 1; i <= MaxEtoiles; i++)
+											{
+												<input type="radio" name="NbEtoiles" value="@i" id="star-edit-star-@i" class="d-none" @(userEval.NbEtoiles == i ? "checked" : "") />
+												<label for="star-edit-star-@i" class="star-label star-edit-star-label" data-star="@i" style="cursor:pointer;">
+													<img src="~/images/etoileVide.png" alt="@i étoiles" class="star-img star-edit-star-img" style="width:25px; height:25px;" />
+												</label>
+											}
+										</div>
+									</div>
+
+									<div class="form-group mt-3">
+										<label for="comment">Commentaire:</label>
+										<textarea id="comment" name="Commentaire" class="form-control" rows="4" maxlength="@Knapsak_CFTW.Models.Evaluation.MaxCommLength">@userEval.Commentaire</textarea>
+									</div>
+
+									<input type="hidden" name="IdItem" value="@Model.IdItems" />
+									<button type="submit" class="btn btn-warning mt-3">Mettre à jour</button>
+								</form>
+
+								<form class="delete-in-update-form" method="post" action="/Items/DeleteEvaluation">
+									@Html.AntiForgeryToken()
+
+									<input type="hidden" name="IdItem" value="@Model.IdItems" />
+									<input type="hidden" name="IdJoueur" value="@userEval.IdJoueur" />
+									<button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i></button>
+								</form>
+							</div>
+						</details>
+					}
+				}
+
+				<ul class="list-group">
+					@if (Model.Evaluations.Any())
+					{
+						if (evalsWithComments.Any())
+						{
+							foreach (var eval in evalsWithComments)
+							{
+									<li class="list-group-item d-flex justify-content-between align-items-start @(eval.IdJoueur == joueurConnecte?.IdJoueurs ? "border border-dark" : "")">
+									<div class="w-100">
+										<p><h5>@eval.IdJoueurNavigation.Alias</h5></p>
+										<p>
+											@{
+												var ratio = (double)eval.NbEtoiles / MaxEtoiles;
+												var fullStars = (int)Math.Round(ratio * MaxEtoiles);
+												for (int i = 0; i < MaxEtoiles; i++)
+												{
+													var starImg = (i < fullStars ? "etoilePleine.png" : "etoileVide.png");
+													<img src="~/images/@starImg" alt="star" style="width:20px; height:20px;" />
+												}
+											}
+										</p>
+										<p><h6>Commentaire:</h6></p>
+										<pre class="comment-pre">@Html.Raw(Html.Encode(eval.Commentaire))</pre> <!--Encode:  safely escapes any HTML tags (e.g., <script> becomes &lt;script&gt;). Raw: allows line breaks and spacing to be rendered as-is inside the <pre> tag.-->
+									</div>
+
+									@if (joueurConnecte != null && (joueurConnecte.IdJoueurs == eval.IdJoueur || SessionService.IsAdmin()))
+									{
+										<form method="post" action="/Items/DeleteEvaluation">
+											@Html.AntiForgeryToken()
+
+											<input type="hidden" name="IdItem" value="@Model.IdItems" />
+											<input type="hidden" name="IdJoueur" value="@eval.IdJoueur" />
+											<button type="submit" class="btn btn-sm btn-danger"><i class="bi bi-trash"></i></button>
+										</form>
+									}
+								</li>
+							}
+						}
+						else
+						{
+							<p>Aucun commentaire n’a encore été soumis pour cet item.</p>
+						}
+					}
+					else
+					{
+						<p>Aucune évaluation n’a encore été soumise pour cet item.</p>
+					}
+				</ul>
+			</div>
+		</div>
+	</div>
+</div>
+
+@section Scripts {
+	<script>
+		function setupStarRating(prefix) {
+			const starLabels = document.querySelectorAll(`.${prefix}-star-label`);
+			const starImgs = document.querySelectorAll(`.${prefix}-star-img`);
+			let selectedRating = parseInt(document.querySelector(`input[name="NbEtoiles"]:checked`)?.value || 0);
+
+			function updateStars(rating) {
+				starImgs.forEach((img, index) => {
+					img.src = index < rating
+						? '/images/etoilePleine.png'
+						: '/images/etoileVide.png';
+				});
+			}
+
+			starLabels.forEach(label => {
+				const starValue = parseInt(label.dataset.star);
+
+				label.addEventListener('mouseenter', () => {
+					updateStars(starValue);
+				});
+
+				label.addEventListener('click', () => {
+					selectedRating = starValue;
+					document.getElementById(`${prefix}-star-${starValue}`).checked = true;
+				});
+
+				label.addEventListener('mouseleave', () => {
+					updateStars(selectedRating);
+				});
+			});
+
+			document.getElementById(`${prefix}-star-rating`)?.addEventListener('mouseleave', () => {
+				updateStars(selectedRating);
+			});
+
+			updateStars(selectedRating); // Initial rendering
+		}
+
+		// Apply to both forms
+		setupStarRating("star");       // for Add Evaluation
+		setupStarRating("star-edit"); // for Edit Evaluation
+	</script>
+
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script>
+		var labels = ['1 étoile', '2 étoiles', '3 étoiles', '4 étoiles', '5 étoiles'];
+		var data = {
+			labels: labels,
+			datasets: [{
+				label: 'Nombre d\'évaluations par étoile',
+				data: @Html.Raw(Json.Serialize(evaluationsPerStar)),
+				backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)', 'rgba(153, 102, 255, 0.2)'],
+				borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)', 'rgba(255, 206, 86, 1)', 'rgba(75, 192, 192, 1)', 'rgba(153, 102, 255, 1)'],
+				borderWidth: 1
+			}]
+		};
+
+		var options = {
+			responsive: true,
+			plugins: {
+				legend: {
+					position: 'top',
+				},
+				tooltip: {
+					callbacks: {
+						label: function(tooltipItem) {
+							return tooltipItem.label + ": " + tooltipItem.raw + " (" + Math.round(percentagePerStar[tooltipItem.dataIndex]) + "%)";
+						}
+					}
+				}
+			},
+			scales: {
+				y: {
+					beginAtZero: true
+				}
+			}
+		};
+
+		var ctx = document.getElementById('evaluation-graph').getContext('2d');
+		new Chart(ctx, {
+			type: 'bar',
+			data: data,
+			options: options
+		});
+	</script>
+}

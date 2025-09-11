@@ -1,0 +1,62 @@
+﻿@model Knapsak_CFTW.Models.Joueur
+
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Inscription";
+}
+
+<div class="d-flex justify-content-center align-items-center">
+    <div class="card shadow-lg p-4" style="width: 400px;">
+        <h2 class="text-center mb-4">Inscription</h2>
+
+        @using (Html.BeginForm("SignUp", "Accounts", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+        {
+            @Html.AntiForgeryToken()
+
+            <div class="form-floating mb-3">
+                @Html.TextBoxFor(model => model.Alias, new { @class = "form-control", placeholder = "Alias" })
+                @Html.LabelFor(model => model.Alias)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.Alias)</div>
+            </div>
+
+            <div class="form-floating mb-3">
+                @Html.TextBoxFor(model => model.Nom, new { @class = "form-control", placeholder = "Nom" })
+                @Html.LabelFor(model => model.Nom)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.Nom)</div>
+            </div>
+
+            <div class="form-floating mb-3">
+                @Html.TextBoxFor(model => model.Prenom, new { @class = "form-control", placeholder = "Prénom" })
+                @Html.LabelFor(model => model.Prenom)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.Prenom)</div>
+            </div>
+
+            <div class="form-floating mb-3">
+                @Html.PasswordFor(model => model.MPasse, new { @class = "form-control", placeholder = "Mot de passe" })
+                @Html.LabelFor(model => model.MPasse)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.MPasse)</div>
+            </div>
+
+            <div class="form-floating mb-3">
+                @Html.PasswordFor(model => model.ConfirmPassword, new { @class = "form-control", placeholder = "Confirmation du mot de passe" })
+                @Html.LabelFor(model => model.ConfirmPassword)
+                <div class="text-danger">@Html.ValidationMessageFor(model => model.ConfirmPassword)</div>
+            </div>
+
+            <button type="submit" class="btn btn-dark w-100">
+                <i class="bi bi-person-plus"></i> S'inscrire
+            </button>
+        }
+
+        <div class="text-center mt-3">
+            @Html.ActionLink("Retour à la liste", "Index", "Items", null, new { @class = "link-noir" })
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/bundles/jqueryval"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@3.2.12/dist/jquery.validate.unobtrusive.min.js"></script>
+}

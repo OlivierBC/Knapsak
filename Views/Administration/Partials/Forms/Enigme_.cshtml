@@ -1,0 +1,84 @@
+﻿@model Knapsak_CFTW.ViewModels.EnigmeEditViewModel
+
+@{
+	bool isCreateMode = Model.IdEnigmes == 0;
+	if (isCreateMode)
+		Model.IndexBonneReponse = 0;
+	string adminDiffClass = Knapsak_CFTW.Models.Enigme.GetCssForDifficulty(Model.Difficulte);
+	if (Model.Reponses.Count == 0)
+	{
+		for (int i = 0; i < 4; i++)
+		{
+			Model.Reponses.Add(new Knapsak_CFTW.ViewModels.ReponseEditViewModel());
+		}
+	}
+
+}
+
+<form action="/Administration/@(isCreateMode ? "CreateEnigme" : "EditEnigme")" method="post" class="card mb-3 p-3">
+	@Html.AntiForgeryToken()
+	@Html.HiddenFor(m => m.IdEnigmes)
+	@Html.HiddenFor(m => m.EstActif)
+
+	<div class="d-flex justify-content-between">
+		<div class="justify-content-start d-flex align-items-center w-100">
+			<select id="difficulte-select"
+					name="Difficulte"
+					class="form-select difficulte-admin fw-bold m-1 pe-auto w-auto @adminDiffClass"
+					onchange="updateDifficultyClass(this)">
+				@foreach (var diff in (List<Knapsak_CFTW.Models.Difficulte>)ViewBag.DifficulteList)
+				{
+					<option value="@diff.IdDifficulte" @(diff.IdDifficulte == Model.Difficulte ? "selected" : "")>
+						@diff.Nom
+					</option>
+				}
+			</select>
+
+			@Html.TextBoxFor(m => m.Question, new { @class = "form-control m-1 w-100", placeholder = "Question" })
+		</div>
+
+		<div class="justify-content-end d-flex align-items-center">
+			@if (!isCreateMode)
+			{
+				<i class="status-enigme-@Model.IdEnigmes fs-3 m-1 bi @(Model.EstActif == 1 ? "bi-eye" : "bi-eye-slash") text-black"
+				   style="cursor: pointer;"
+				   onclick="toggleEnigme(@Model.IdEnigmes)"
+				   title="@(Model.EstActif == 1 ? "Désactiver" : "Activer")">
+				</i>
+			}
+
+			<button type="submit" class="btn p-0 m-1" title="Enregistrer les modifications">
+				<i class="bi bi-check-square fs-3 text-black"></i>
+			</button>
+
+			<button type="button" class="btn p-0 m-1" title="Annuler les modifications" onclick="resetAndCloseEnigme(this)">
+				<i class="bi bi-x-square fs-3 text-black"></i>
+			</button>
+		</div>
+	</div>
+
+	<div class="mt-3">
+		<h6>Réponses</h6>
+		@Html.HiddenFor(m => m.IndexBonneReponse)
+
+		@for (int i = 0; i < Model.Reponses.Count; i++)
+		{
+			@Html.HiddenFor(m => m.Reponses[i].IdReponses)
+
+			<div class="input-group mb-2" style="min-width:50px;">
+				@Html.TextBoxFor(m => m.Reponses[i].ReponseText, new { @class = "form-control", placeholder = $"Réponse #{i + 1}" })
+
+				<div class="input-group-text p-0">
+					<button type="button"
+							class="icon-radio w-100 h-100 d-flex justify-content-center align-items-center @(Model.IndexBonneReponse == i ? "selected" : "")"
+							onclick="selectBonneReponse(@i, this)"
+							data-index="@i"
+							title="Marquer comme bonne réponse">
+						<i class="bi @(Model.IndexBonneReponse == i ? "bi-check-lg" : "") fs-5"></i>
+					</button>
+				</div>
+			</div>
+		}
+
+	</div>
+</form>

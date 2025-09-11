@@ -1,0 +1,87 @@
+﻿@using Knapsak_CFTW.Controllers;
+@using Knapsak_CFTW.Models;
+@inject Knapsak_CFTW.Models.SessionService SessionService
+
+@{
+    SessionService.UpdateSessionPlayerInfo();
+    var joueurConnecte = SessionService.GetConnected(false);
+}
+
+<header>
+    <div class="header-container">
+        <a href="/" class="brand">
+            <img src="/images/logo.png" alt="Logo">
+            KnapSak-CFTW
+        </a>
+
+        <button class="menu-toggle" id="menuToggle" aria-label="Menu"><i class="bi bi-list"></i></button>
+
+        <nav id="navMenu">
+            @if (joueurConnecte != null)
+            {
+                <div class="nav-section">
+					<span><b>@joueurConnecte.Alias</b></span>
+					<span class="ms-2"><i class="bi bi-heart"></i> @joueurConnecte.PointsDeVie / @Joueur.MaxHealth</span>
+					<span class="ms-2"><img src="/images/Bottle_Cap.png" alt="Caps" style="width: 16px; height: 16px;"> @joueurConnecte.Montant</span>
+					<span class="ms-2">Dex : @joueurConnecte.DexteriteAffiche</span>
+					<span class="ms-2"><img src="/images/Poids_Icon.png" alt="Poids" class="icon"> @joueurConnecte.PoidsTotal / @Joueur.MaxWeight</span>
+				</div>
+                
+                <div class="nav-section">
+                    <a href="@Url.Action("Index", "Paniers")" class="btn btn-dark btn-round nbitemPanier" title="Panier">
+                        <i class="bi bi-cart-fill"></i>
+                        @if (joueurConnecte.NbItemsPanier > 0)
+                        {
+                            <span class="red-round-icon">@joueurConnecte.NbItemsPanier</span>
+                        }
+                    </a>
+                 
+                    <a href="@Url.Action("Index", "SacADos")" class="btn btn-dark btn-round" title="Sac à dos">
+                        <i class="bi bi-backpack2-fill"></i>
+                    </a>
+
+
+
+                    <a href="@Url.Action("Index", "Enigma")" class="btn btn-dark btn-round" title="Enigma">
+                        <i class="bi bi-puzzle-fill"></i>
+                    </a>
+
+                    @if (SessionService.IsAdmin())
+                    {
+
+                        <a href="@Url.Action("Index", "Administration")" class="btn btn-dark btn-round" title="Administration">
+                            <i class="bi bi-shield-lock-fill"></i>
+                        </a>
+
+                    }
+
+                    <a href="@Url.Action("MonProfil", "Accounts")" class="btn btn-dark btn-round" title="Profil">
+                        <i class="bi bi-person-fill"></i>
+                    </a>
+                </div>
+
+                <div class="nav-section">
+                    @using (Html.BeginForm("SignOut", "Accounts", FormMethod.Post))
+                    {
+                        @Html.AntiForgeryToken()
+                        <input type="submit" value="Déconnexion" class="btn btn-light border-dark" />
+                    }
+                </div>
+            }
+            else
+            {
+                    <a href="@Url.Action("SignIn", "Accounts")" class="btn btn-light border-dark" title="Se connecter">Se connecter</a>
+                    <a href="@Url.Action("SignUp", "Accounts")" class="btn btn-dark" title="S'inscrire">S'inscrire</a>
+            }
+        </nav>
+    </div>
+</header>
+
+<script>
+    const toggleBtn = document.getElementById('menuToggle');
+    const navMenu = document.getElementById('navMenu');
+
+    toggleBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('show');
+    });
+</script>

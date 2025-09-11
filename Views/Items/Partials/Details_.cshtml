@@ -1,0 +1,160 @@
+﻿@inject Knapsak_CFTW.Models.SessionService SessionService
+@using Microsoft.EntityFrameworkCore;
+@model Knapsak_CFTW.Models.Item
+
+@{
+    ViewData["Title"] = "Details";
+    var EvalsInfo = Model.GetEvalsInfo();
+    int MaxEtoiles = Knapsak_CFTW.Models.Evaluation.MaxEtoiles;
+
+    var joueurConnecte = SessionService.GetConnected(false);
+    var userEval = joueurConnecte != null
+        ? Model.Evaluations.FirstOrDefault(e => e.IdJoueur == joueurConnecte.IdJoueurs)
+        : null;
+
+    var evalsWithComments = SessionService.GetEvalsWithComments(Model.IdItems);
+    if (userEval != null && !string.IsNullOrEmpty(userEval.Commentaire))
+    {
+        evalsWithComments = new[] { userEval }
+            .Concat(evalsWithComments.Where(e => e.IdJoueur != userEval.IdJoueur))
+            .ToList();
+    }
+}
+
+<div class="modal fade custom-modal" id="itemModal-@Model.IdItems" tabindex="-1" aria-labelledby="itemModalLabel-@Model.IdItems" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+
+                <button type="button" class="custom-btn-close" data-bs-dismiss="modal" aria-label="Fermer">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+
+                <div class="image-container">
+                    <img src="@Model.LienImage" class="popup-image" alt="@Model.Nom">
+                </div>
+
+                <div class="info-container">
+                    <div class="info-row">
+                        <h4>@Model.Nom</h4>
+                    </div>
+                    <div class="info-row">
+                        <p><img src="/images/Bottle_Cap.png" alt="Caps" class="icon"> @Model.PrixUnitaire</p>
+                        <p class="item-type @Model.GetCssForClass()"> @Model.TypeItem</p>
+                        <p><img src="/images/Poids_Icon.png"alt="Poids" class="icon">  @Model.Poids</p>
+                        <p><strong>Stock :</strong> @Model.QuantiteStock</p>
+						<p><img src="/images/etoilePleine.png" alt="Poids" style="width: 25px; height: 25px;"><b>@EvalsInfo.Item2</b> (@EvalsInfo.Item1)</p>
+                    </div>
+                    <div class="info-row" style="background-color:@Model.GetCssForClassBackground();width:fit-content;text-align:center;border-radius:10px; padding: 5px 10px;">
+                        
+                        @switch(Model.TypeItem){
+                            case "Nourritures":
+                                <p class="pdetail"><img src="/images/gainVie.png" alt="Vie" class="icon"> @Model.Nourriture.GainDeVie</p>
+                                <p class="pdetail">Composant Nutritif: @Model.Nourriture.ComposantNutritif</p>
+                                <p class="pdetail">Mineral: @Model.Nourriture.Mineral</p>
+                                <p class="pdetail">Calories: @Model.Nourriture.Calories</p>
+                                break;
+                            case "Medicaments":
+                                <p class="pdetail"><img src="/images/gainVie.png" alt="Vie" class="icon"> @Model.Medicament.GainDeVie</p>
+                                <p class="pdetail">Effet: @Model.Medicament.Effet</p>
+                                <p class="pdetail">Effet indesirable:@Model.Medicament.EffetIndesirable</p>
+                                <p class="pdetail">Duree:@Model.Medicament.Duree</p>
+                                break;
+                            case "Armes":
+                                @foreach (var arme in Model.Armes)
+                                {
+                                    <p class="pdetail">Efficacité : @arme.Efficacite</p>
+                                    <p class="pdetail">Genre :  @arme.Genre</p>
+                                }
+                                break;
+                            case "Armures":
+                                <p class="pdetail"> Taille: @Model.Armure.Taille</p>
+                                <p class="pdetail">Matiere: @Model.Armure.Matiere</p>
+                                break;
+                            case "Munitions":
+                                <p class="pdetail">Calibre: @Model.Munition.Calibre</p>
+                                break;
+                            default:
+                                break;
+                        }
+                       
+                    </div>
+                    <div class="info-row">
+                        <p>@Model.Description</p>
+                    </div>
+                </div>
+
+
+
+                @if (Model.FlagDispo == 0 || Model.QuantiteStock <= 0)
+                {
+                    <div class="alert-icon" title="L'item n'est plus disponible à l'achat">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                    </div>
+                   
+                } else {
+                    <div class="add-to-cart">
+                        @using (Html.BeginForm("Ajouter", "Paniers", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            @Html.Hidden("IdItem", Model.IdItems)
+
+                            <button type="submit" class="btn add-to-cart-btn btn-dark">
+                                Ajouter au panier
+                            </button>
+                        }
+
+                    </div>
+                }
+                
+            </div>
+
+            @if (evalsWithComments != null && evalsWithComments.Any())
+            {
+                <div class="mt-4">
+                    <h5>Commentaires des joueurs</h5>
+                    <div class="overflow-auto border rounded p-3 bg-light" style="max-height: 150px;">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var eval in evalsWithComments)
+                            {
+                                var etoilesPleines = eval.NbEtoiles;
+                                var etoilesVides = MaxEtoiles - etoilesPleines;
+
+                                <li class="list-group-item d-flex justify-content-between align-items-start @(eval.IdJoueur == joueurConnecte?.IdJoueurs ? "border border-dark" : "")">
+                                    <div class="w-100">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <strong class="me-3">@eval.IdJoueurNavigation.Alias</strong>
+                                            <div>
+                                                @for (int i = 0; i < etoilesPleines; i++)
+                                                {
+                                                    <img src="/images/etoilePleine.png" alt="Étoile pleine" style="width: 20px; height: 20px;" />
+                                                }
+                                                @for (int i = 0; i < etoilesVides; i++)
+                                                {
+                                                    <img src="/images/etoileVide.png" alt="Étoile vide" style="width: 20px; height: 20px;" />
+                                                }
+                                            </div>
+                                        </div>
+                                        @if (!string.IsNullOrWhiteSpace(eval.Commentaire))
+                                        {
+                                            <pre class="comment-pre">@Html.Raw(Html.Encode(eval.Commentaire))</pre> <!--Encode:  safely escapes any HTML tags (e.g., <script> becomes &lt;script&gt;). Raw: allows line breaks and spacing to be rendered as-is inside the <pre> tag.-->
+                                        }
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted">Aucun commentaire pour cet item.</p>
+            }
+
+            <a class="btn btn-light border-dark m-auto mt-2" href="@Url.Action("Evaluations", "Items", new { id = Model.IdItems })">
+                Voir les évaluations (@EvalsInfo.Item1)
+            </a>
+        </div>
+    </div>
+</div>

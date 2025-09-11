@@ -1,0 +1,49 @@
+﻿@using Knapsak_CFTW.Models
+@model Knapsak_CFTW.Models.Joueur
+
+@{
+	Layout = "_Layout";
+	ViewData["Title"] = "Mon Profil";
+}
+
+<h3 class="text-center">Mon Profil</h3>
+
+<div class="container">
+	<div class="card shadow-sm p-4 mx-auto" style="max-width: 600px;">
+
+		<dl class="row">
+			<dt class="col-sm-4">Alias</dt>
+			<dd class="col-sm-8">@Model.Alias</dd>
+
+			<dt class="col-sm-4">Nom</dt>
+			<dd class="col-sm-8">@Model.Nom</dd>
+
+			<dt class="col-sm-4">Prénom</dt>
+			<dd class="col-sm-8">@Model.Prenom</dd>
+
+			<dt class="col-sm-4">Montant</dt>
+			<dd class="col-sm-8 d-flex justify-content-between align-items-center">
+				@Model.Montant
+				<form method="post" action="@Url.Action("SendRequete", "Accounts")" class="d-inline">
+					@Html.AntiForgeryToken()
+					<button type="submit" class="btn btn-sm btn-outline-primary ms-2">+</button>
+				</form>
+			</dd>
+
+			<dt class="col-sm-4">Dextérité</dt>
+			<dd class="col-sm-8">@Model.DexteriteAffiche</dd>
+
+			<dt class="col-sm-4">Points de Vie</dt>
+			<dd class="col-sm-8">@Model.PointsDeVie / @Joueur.MaxHealth</dd>
+
+			<dt class="col-sm-4">Poids Total</dt>
+			<dd class="col-sm-8">@Model.PoidsTotal  / @Joueur.MaxWeight</dd>
+		</dl>
+
+		<div class="text-center mt-4">
+			<a href="@Url.Action("EditProfil", "Accounts")" class="btn btn-dark">
+				<i class="bi bi-pencil"></i> Modifier le profil
+			</a>
+		</div>
+	</div>
+</div>

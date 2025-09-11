@@ -1,0 +1,47 @@
+﻿@model IEnumerable<Knapsak_CFTW.Models.Requetes>
+
+<div class="d-flex justify-content-between align-items-center mb-3 header-toolbar">
+    <h4 class="mb-0">Gestion des Requêtes</h4>
+</div>
+
+<div>
+    @if (!Model.Any())
+    {
+        <span>Aucune requête en cours</span>
+    }
+    else
+    {
+        @foreach (var requete in Model)
+        {
+            <div class="card mb-3 p-3 border">
+                <h5>Requête #@requete.IdRequete</h5>
+                <p><strong>Joueur :</strong> @requete.Joueur?.Alias (@requete.IdJoueurs)</p>
+                <p><strong>Capsules demandées :</strong> @requete.CapsulesDemandes</p>
+
+                @if (!requete.EstReglee)
+                {
+                    <div class="btn-group" role="group">
+                        <div class="btn-group">
+                            @using (Html.BeginForm("RepondreRequete", "Administration", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="idRequete" value="@requete.IdRequete" />
+                                <input type="hidden" name="estAcceptee" value="true" />
+                                <button type="submit" class="btn btn-success">Accepter</button>
+                            }
+                        </div>
+                        <div class="btn-group">
+                            @using (Html.BeginForm("RepondreRequete", "Administration", FormMethod.Post, new { @class = "needs-validation", novalidate = "true" }))
+                            {
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="idRequete" value="@requete.IdRequete" />
+                                <input type="hidden" name="estAcceptee" value="false" />
+                                <button type="submit" class="btn btn-danger">Refuser</button>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
